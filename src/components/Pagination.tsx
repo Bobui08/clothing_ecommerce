@@ -17,7 +17,7 @@ export default function Pagination({ pageCount, onPageChange, forcePage }) {
         onPageChange={onPageChange}
         forcePage={forcePage}
         containerClassName="flex space-x-2 justify-center mt-4"
-        pageClassName="px-3 h-[36px] pt-[4px]"
+        pageClassName="px-3 h-[36px] pt-[4px] cursor-pointer"
         activeClassName="bg-primary text-primary-foreground rounded-md"
         previousClassName="px-3"
         nextClassName="px-3"
