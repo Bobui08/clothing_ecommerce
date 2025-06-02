@@ -4,12 +4,13 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { motion } from "framer-motion";
+import { ProductFormProps } from "@/types/product";
 
 export default function ProductForm({
   initialData = {},
   onSubmit,
   isEdit = false,
-}) {
+}: Readonly<ProductFormProps>) {
   const [formData, setFormData] = useState({
     name: initialData.name ?? "",
     description: initialData.description ?? "",
@@ -23,12 +24,12 @@ export default function ProductForm({
   const [uploadError, setUploadError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
-  const handleChange = (e) => {
+  const handleChange = (e: any) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = (e: any) => {
     const selectedFile = e.target.files[0];
     setFile(selectedFile);
     setUploadError("");
@@ -40,7 +41,7 @@ export default function ProductForm({
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     setUploadError("");
     setIsUploading(true);
@@ -51,17 +52,15 @@ export default function ProductForm({
       try {
         const formDataUpload = new FormData();
         formDataUpload.append("file", file);
-        formDataUpload.append(
-          "upload_preset",
-          process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
-        );
+        const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
         const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
         if (!cloudName) {
           throw new Error("Cloudinary cloud name is not configured");
         }
-        if (!process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET) {
+        if (!uploadPreset) {
           throw new Error("Cloudinary upload preset is not configured");
         }
+        formDataUpload.append("upload_preset", uploadPreset);
         const response = await fetch(
           `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
           {
@@ -78,7 +77,11 @@ export default function ProductForm({
         console.log("Cloudinary upload success:", { imageUrl });
       } catch (error) {
         console.error("Cloudinary upload error:", error);
-        setUploadError(error.message);
+        if (error instanceof Error) {
+          setUploadError(error.message);
+        } else {
+          setUploadError("Image upload failed");
+        }
         setIsUploading(false);
         return;
       }

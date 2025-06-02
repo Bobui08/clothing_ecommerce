@@ -55,9 +55,9 @@ export default function EditProduct() {
     },
   });
 
-  const handleSubmit = (data: any) => {
+  const handleSubmit = async (data: any) => {
     if (user) {
-      mutation.mutate({ id, data });
+      await mutation.mutateAsync({ id, data });
     }
   };
 

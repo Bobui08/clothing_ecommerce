@@ -34,3 +34,18 @@ export interface CreateProductRequestBody {
 export interface ErrorResponse {
   error: string;
 }
+
+export interface ProductFormData {
+  name?: string;
+  description?: string;
+  price?: number | string;
+  image?: string;
+  category?: string;
+  stock?: number;
+}
+
+export interface ProductFormProps {
+  initialData?: ProductFormData;
+  onSubmit: (data: ProductFormData) => Promise<void>;
+  isEdit?: boolean;
+}

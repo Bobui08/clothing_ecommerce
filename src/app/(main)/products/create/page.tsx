@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import ProductForm from "@/components/ProductForm";
 import { useUser } from "@stackframe/stack";
 import { useEffect } from "react";
+import { ProductFormData } from "@/types/product";
 
 async function createProduct(data) {
   const response = await fetch("/api/products", {
@@ -31,7 +32,7 @@ export default function CreateProduct() {
   const mutation = useMutation({
     mutationFn: createProduct,
     onSuccess: () => {
-      queryClient.invalidateQueries(["products"]);
+      queryClient.invalidateQueries({ queryKey: ["products"] });
       router.push("/");
     },
     onError: (error) => {
@@ -41,9 +42,9 @@ export default function CreateProduct() {
     },
   });
 
-  const handleSubmit = (data) => {
+  const handleSubmit = async (data: ProductFormData): Promise<void> => {
     if (user) {
-      mutation.mutate(data);
+      await mutation.mutateAsync(data);
     }
   };
 

@@ -27,13 +27,12 @@ const Logo = ({ logo, isMobile = false }: LogoProps) => {
         />
         <motion.div
           whileHover={{ rotate: 360 }}
-          transition={{ duration: 0.8 }}
           animate={isMobile ? { rotate: [0, 360] } : undefined}
-          transition={
-            isMobile
-              ? { duration: 20, repeat: Infinity, ease: "linear" }
-              : undefined
-          }
+          transition={{
+            duration: isMobile ? 20 : 0.8,
+            repeat: isMobile ? Infinity : undefined,
+            ease: isMobile ? "linear" : undefined,
+          }}
         >
           <ShoppingBag
             className={`relative h-${isMobile ? "7" : "8"} w-${
