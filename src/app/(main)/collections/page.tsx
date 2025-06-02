@@ -232,7 +232,7 @@ export default function CollectionsPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.05 }}
                 >
-                  <Card className="group relative overflow-hidden bg-white dark:bg-gray-900 border-0 shadow-lg hover:shadow-2xl transition-all duration-500 rounded-3xl backdrop-blur-sm hover:-translate-y-2 hover:rotate-1">
+                  <Card className="group pt-0 relative overflow-hidden bg-white dark:bg-gray-900 border-0 shadow-lg hover:shadow-2xl transition-all duration-500 rounded-3xl backdrop-blur-sm hover:-translate-y-2 hover:rotate-1">
                     {/* Gradient overlay for premium feel */}
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-transparent to-pink-50 dark:from-purple-900/10 dark:via-transparent dark:to-pink-900/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
