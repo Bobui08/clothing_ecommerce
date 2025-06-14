@@ -25,4 +25,4 @@ export default function Pagination({ pageCount, onPageChange, forcePage }) {
       />
     </motion.div>
   );
-}
+}  

@@ -1,10 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import connectDB from "../../../../lib/db";
 import { toSerializableObject } from "../../../../lib/utils";
 import Product from "@/models/Product";
-import { stackServerApp } from "@/stack";
 
-export async function GET(request, { params }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   await connectDB();
   const { id } = await params;
 
@@ -23,13 +25,19 @@ export async function GET(request, { params }) {
   }
 }
 
-export async function PUT(request, { params }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   await connectDB();
   const { id } = await params;
 
-  // Check if user is authenticated
-  const user = await stackServerApp.getUser();
-  if (!user) {
+  // Lấy user info từ headers (đã được middleware thêm vào)
+  const userId = request.headers.get("x-user-id");
+  const userEmail = request.headers.get("x-user-email");
+
+  // Middleware đã kiểm tra auth, nhưng double check để chắc chắn
+  if (!userId) {
     return NextResponse.json(
       { error: "Unauthorized: Please sign in to update a product" },
       { status: 401 }
@@ -39,15 +47,25 @@ export async function PUT(request, { params }) {
   try {
     const { name, description, price, image, category, stock } =
       await request.json();
+
     const product = await Product.findByIdAndUpdate(
       id,
-      { name, description, price, image, category, stock: Number(stock) },
+      {
+        name,
+        description,
+        price,
+        image,
+        category,
+        stock: Number(stock),
+        updatedBy: userId, // Thêm thông tin user cập nhật
+      },
       { new: true, runValidators: true }
-    ).lean(); 
+    ).lean();
+
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
-    return NextResponse.json(toSerializableObject(product)); 
+    return NextResponse.json(toSerializableObject(product));
   } catch (error) {
     console.error("Error updating product:", error);
     return NextResponse.json(
@@ -57,13 +75,19 @@ export async function PUT(request, { params }) {
   }
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   await connectDB();
   const { id } = await params;
 
-  // Check if user is authenticated
-  const user = await stackServerApp.getUser();
-  if (!user) {
+  // Lấy user info từ headers (đã được middleware thêm vào)
+  const userId = request.headers.get("x-user-id");
+  const userEmail = request.headers.get("x-user-email");
+
+  // Middleware đã kiểm tra auth, nhưng double check để chắc chắn
+  if (!userId) {
     return NextResponse.json(
       { error: "Unauthorized: Please sign in to delete a product" },
       { status: 401 }
@@ -71,7 +95,8 @@ export async function DELETE(request, { params }) {
   }
 
   try {
-    const product = await Product.findByIdAndDelete(id).lean(); 
+    const product = await Product.findByIdAndDelete(id).lean();
+
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }

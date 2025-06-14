@@ -48,4 +48,5 @@ export interface ProductFormProps {
   initialData?: ProductFormData;
   onSubmit: (data: ProductFormData) => Promise<void>;
   isEdit?: boolean;
+  isLoading?: boolean;
 }

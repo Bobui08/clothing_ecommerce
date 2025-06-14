@@ -1,8 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import connectDB from "../../../lib/db";
 import { toSerializableArray, toSerializableObject } from "../../../lib/utils";
 import Product from "@/models/Product";
-import { stackServerApp } from "@/stack";
 import {
   CreateProductRequestBody,
   ErrorResponse,
@@ -55,12 +54,16 @@ export async function GET(
 }
 
 export async function POST(
-  request: Request
+  request: NextRequest
 ): Promise<NextResponse<ErrorResponse | object>> {
   await connectDB();
 
-  const user: unknown = await stackServerApp.getUser();
-  if (!user) {
+  // Lấy user info từ headers (đã được middleware thêm vào)
+  const userId = request.headers.get("x-user-id");
+  const userEmail = request.headers.get("x-user-email");
+
+  // Middleware đã kiểm tra auth, nhưng double check để chắc chắn
+  if (!userId) {
     return NextResponse.json(
       { error: "Unauthorized: Please sign in to create a product" },
       { status: 401 }
@@ -91,6 +94,7 @@ export async function POST(
       image,
       category,
       stock: Number(stock),
+      createdBy: userId, // Thêm thông tin user tạo product
     });
 
     const savedProduct: unknown = await product.save();

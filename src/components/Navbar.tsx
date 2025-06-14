@@ -9,6 +9,7 @@ import DesktopMenu from "./navbar/DesktopMenu";
 import ThemeToggle from "./navbar/ThemeToggle";
 import AuthSection from "./navbar/AuthSection";
 import MobileMenu from "./navbar/MobileMenu";
+import { useAuth } from "@/context/AuthContext";
 
 interface MenuItem {
   title: string;
@@ -68,6 +69,7 @@ const Navbar = ({
   const { theme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
+  const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -79,6 +81,12 @@ const Navbar = ({
   }, []);
 
   const handleMenuClick = (item: MenuItem) => {
+    // Check if item requires auth and user is not logged in
+    if (item.requireAuth && !user) {
+      router.push("/auth/login");
+      return;
+    }
+
     if (item.onClick) {
       item.onClick();
     } else if (item.url.startsWith("#")) {
@@ -95,6 +103,14 @@ const Navbar = ({
       router.push(item.url);
     }
   };
+
+  // Filter menu items based on auth status
+  const filteredMenu = menu.filter((item) => {
+    if (item.requireAuth && !user) {
+      return false; // Hide auth-required items for non-authenticated users
+    }
+    return true;
+  });
 
   // Extracted backgroundColor logic
   let backgroundColor: string;
@@ -129,7 +145,7 @@ const Navbar = ({
         }}
         transition={{ duration: 0.3 }}
         style={{
-          color: textColor, // Use the extracted textColor
+          color: textColor,
         }}
       >
         <div className="container mx-auto px-4">
@@ -140,7 +156,10 @@ const Navbar = ({
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             <Logo logo={logo} />
-            <DesktopMenu menu={menu} handleMenuClick={handleMenuClick} />
+            <DesktopMenu
+              menu={filteredMenu}
+              handleMenuClick={handleMenuClick}
+            />
             <motion.div
               className="flex items-center gap-3 ml-auto"
               initial={{ x: 20, opacity: 0 }}
@@ -151,7 +170,11 @@ const Navbar = ({
               <AuthSection auth={auth} />
             </motion.div>
           </motion.nav>
-          <MobileMenu menu={menu} logo={logo} handleMenuClick={handleMenuClick}>
+          <MobileMenu
+            menu={filteredMenu}
+            logo={logo}
+            handleMenuClick={handleMenuClick}
+          >
             <ThemeToggle isMobile />
             <AuthSection auth={auth} isMobile />
           </MobileMenu>
