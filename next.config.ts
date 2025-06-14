@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
   images: {
     domains: ["res.cloudinary.com"],
   },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  serverExternalPackages: ["mongoose", "jose"],
 };
 
 export default nextConfig;

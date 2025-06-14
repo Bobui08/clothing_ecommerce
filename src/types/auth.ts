@@ -6,4 +6,9 @@ export interface AuthContextType {
   register: (email: string, password: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
+  checkTokenValidity: () => Promise<boolean>;
+}
+
+export interface RouteParams {
+  params: { id: string };
 }

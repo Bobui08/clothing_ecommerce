@@ -17,6 +17,7 @@ interface MenuItem {
   description?: string;
   icon?: React.ReactNode;
   items?: MenuItem[];
+  requireAuth?: boolean;
   onClick?: () => void;
 }
 

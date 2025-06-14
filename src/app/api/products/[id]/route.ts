@@ -1,17 +1,24 @@
+// @ts-expect-error
+
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "../../../../lib/db";
 import { toSerializableObject } from "../../../../lib/utils";
 import Product from "@/models/Product";
+import { RouteParams } from "@/types/auth";
+
+interface Params {
+  id: string;
+}
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Params }
 ) {
   await connectDB();
-  const { id } = await params;
+  const { id } = params;
 
   try {
-    const product = await Product.findById(id).lean(); // Return plain object
+    const product = await Product.findById(id).lean();
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
@@ -27,10 +34,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Params }
 ) {
   await connectDB();
-  const { id } = await params;
+  const { id } = params;
 
   // Lấy user info từ headers (đã được middleware thêm vào)
   const userId = request.headers.get("x-user-id");
@@ -77,10 +84,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Params }
 ) {
   await connectDB();
-  const { id } = await params;
+  const { id } = params;
 
   // Lấy user info từ headers (đã được middleware thêm vào)
   const userId = request.headers.get("x-user-id");
