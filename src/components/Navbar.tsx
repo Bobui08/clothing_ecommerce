@@ -261,7 +261,7 @@ const Navbar = ({
                   width={24}
                   height={24}
                   viewBox="0 0 24 24"
-                  className="text-gray-600 hover:text-blue-500 transition-colors duration-200"
+                  className="text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors duration-200"
                 >
                   <path
                     fill="currentColor"

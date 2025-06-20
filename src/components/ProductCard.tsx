@@ -2,9 +2,70 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent, CardFooter } from "./ui/card";
+import { Button } from "./ui/button";
 import { motion } from "framer-motion";
+import { Plus, ShoppingCart } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { useState } from "react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function ProductCard({ product }: any) {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+
+  const handleAddToCart = async () => {
+    if (!user) {
+      toast.info("Please login to add products to cart");
+      router.push("/auth/login");
+      return;
+    }
+
+    if (product.stock === 0) {
+      toast.error("Product is out of stock");
+      return;
+    }
+
+    setIsAddingToCart(true);
+    try {
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": user.id,
+        },
+        body: JSON.stringify({
+          productId: product._id,
+          quantity: 1,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to add to cart");
+      }
+
+      toast.success(`${product.name} added to cart!`, {
+        description: `You now have ${
+          Object.keys(data.items).length
+        } items in your cart`,
+        action: {
+          label: "View Cart",
+          onClick: () => router.push("/cart"),
+        },
+      });
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to add to cart"
+      );
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 40, scale: 0.9 }}
@@ -82,6 +143,39 @@ export default function ProductCard({ product }: any) {
                   : "Out of stock"}
               </div>
             </motion.div>
+
+            {/* Add to Cart Button - Floating on Image */}
+            <motion.div
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+              className="absolute bottom-4 right-4 "
+            >
+              <Button
+                size="sm"
+                className="bg-gradient-to-r from-primary to-primary/80 cursor-pointer hover:from-primary/90 hover:to-primary text-primary-foreground shadow-lg rounded-full px-4 py-2 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-md"
+                disabled={product.stock === 0 || isAddingToCart}
+                onClick={handleAddToCart}
+              >
+                {isAddingToCart ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                    Adding...
+                  </div>
+                ) : (
+                  <>
+                    {product.stock > 0 ? (
+                      <>
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        Add to Cart
+                      </>
+                    ) : (
+                      "Out of Stock"
+                    )}
+                  </>
+                )}
+              </Button>
+            </motion.div>
           </div>
         )}
 
@@ -150,12 +244,13 @@ export default function ProductCard({ product }: any) {
         </CardContent>
 
         {/* Footer Section */}
-        <CardFooter className="p-6 pt-0 relative z-10">
+        <CardFooter className="p-6 pt-0 relative z-10 space-y-3">
+          {/* View Details Button */}
           <Link href={`/products/${product._id}`} className="w-full">
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 relative overflow-hidden group/btn"
+              className="w-full bg-gradient-to-r from-secondary to-secondary/80 hover:from-secondary/90 hover:to-secondary text-secondary-foreground font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 relative overflow-hidden group/btn border border-border/50"
             >
               {/* Button background animation */}
               <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -skew-x-12 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700" />

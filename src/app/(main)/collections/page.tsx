@@ -44,7 +44,6 @@ export default function CollectionsPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
 
-  console.log("users", user);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["products-manage", { page, search, category }],

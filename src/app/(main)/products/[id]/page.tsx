@@ -2,11 +2,14 @@
 import { use } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowLeft, Package, Tag, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Package, Tag, ShoppingBag, Plus } from "lucide-react";
 import { Button } from "../../../../components/ui/button";
 import { Badge } from "../../../../components/ui/badge";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { useState } from "react";
+import { toast } from "sonner";
 import Image from "next/image";
 
 async function fetchProduct(id: string) {
@@ -21,7 +24,11 @@ export default function ProductDetailPage({
   readonly params: Promise<{ id: string }>;
 }) {
   const router = useRouter();
+  const { user } = useAuth();
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
   const unwrappedParams = use(params);
+
   const {
     data: product,
     isLoading,
@@ -30,6 +37,107 @@ export default function ProductDetailPage({
     queryKey: ["product", unwrappedParams.id],
     queryFn: () => fetchProduct(unwrappedParams.id),
   });
+
+  const handleAddToCart = async () => {
+    if (!user) {
+      toast.info("Please login to add products to cart");
+      router.push("/auth/login");
+      return;
+    }
+
+    if (product.stock === 0) {
+      toast.error("Product is out of stock");
+      return;
+    }
+
+    setIsAddingToCart(true);
+    try {
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": user.id,
+        },
+        body: JSON.stringify({
+          productId: product._id,
+          quantity: 1,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to add to cart");
+      }
+
+      toast.success(`${product.name} added to cart!`, {
+        description: `You now have ${
+          Object.keys(data.items).length
+        } items in your cart`,
+        action: {
+          label: "View Cart",
+          onClick: () => router.push("/cart"),
+        },
+      });
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to add to cart"
+      );
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (!user) {
+      toast.info("Please login to purchase products");
+      router.push("/auth/login");
+      return;
+    }
+
+    if (product.stock === 0) {
+      toast.error("Product is out of stock");
+      return;
+    }
+
+    setIsBuyingNow(true);
+    try {
+      // First add to cart
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": user.id,
+        },
+        body: JSON.stringify({
+          productId: product._id,
+          quantity: 1,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to add to cart");
+      }
+
+      // Then redirect to checkout
+      toast.success(
+        `${product.name} added to cart! Redirecting to checkout...`
+      );
+      setTimeout(() => {
+        router.push("/checkout");
+      }, 1000);
+    } catch (error) {
+      console.error("Error with buy now:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to process purchase"
+      );
+    } finally {
+      setIsBuyingNow(false);
+    }
+  };
 
   if (error) {
     return (
@@ -219,6 +327,27 @@ export default function ProductDetailPage({
               </div>
             </motion.div>
 
+            {/* Login Reminder for Non-authenticated Users */}
+            {!user && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.55 }}
+                className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4"
+              >
+                <p className="text-blue-700 dark:text-blue-300 text-sm">
+                  Please{" "}
+                  <button
+                    onClick={() => router.push("/auth/login")}
+                    className="font-semibold underline hover:text-blue-800 dark:hover:text-blue-200"
+                  >
+                    login
+                  </button>{" "}
+                  to add products to your cart and make purchases.
+                </p>
+              </motion.div>
+            )}
+
             {/* Action Buttons */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -228,20 +357,47 @@ export default function ProductDetailPage({
             >
               <Button
                 size="lg"
-                disabled={product.stock === 0}
-                className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 font-semibold h-12"
+                disabled={product.stock === 0 || isAddingToCart}
+                onClick={handleAddToCart}
+                className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 font-semibold h-12 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
-                <ShoppingBag className="mr-2 h-5 w-5" />
-                {product.stock > 0 ? "Add to Cart" : "Out of stock"}{" "}
+                {isAddingToCart ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Adding to Cart...
+                  </div>
+                ) : (
+                  <>
+                    {product.stock > 0 ? (
+                      <>
+                        <Plus className="mr-2 h-5 w-5" />
+                        Add to Cart
+                      </>
+                    ) : (
+                      "Out of stock"
+                    )}
+                  </>
+                )}
               </Button>
 
               <Button
                 size="lg"
                 variant="outline"
-                disabled={product.stock === 0}
-                className="sm:w-auto border-purple-200 hover:bg-purple-50 dark:border-purple-700 dark:hover:bg-purple-900/20 hover:text-purple-600 h-12"
+                disabled={product.stock === 0 || isBuyingNow}
+                onClick={handleBuyNow}
+                className="sm:w-auto border-purple-200 hover:bg-purple-50 dark:border-purple-700 dark:hover:bg-purple-900/20 hover:text-purple-600 h-12 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Buy Now
+                {isBuyingNow ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    Processing...
+                  </div>
+                ) : (
+                  <>
+                    <ShoppingBag className="mr-2 h-5 w-5" />
+                    Buy Now
+                  </>
+                )}
               </Button>
             </motion.div>
           </div>

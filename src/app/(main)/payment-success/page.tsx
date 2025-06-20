@@ -1,3 +1,5 @@
+// payment-success/page.tsx - Fixed version
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -24,7 +26,6 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 
-// Updated interface to match checkout structure
 interface Order {
   _id: string;
   userId: string;
@@ -59,10 +60,11 @@ interface Order {
 export default function PaymentSuccessPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -81,15 +83,29 @@ export default function PaymentSuccessPage() {
     });
   };
 
-  // Updated to match checkout auth pattern
+  // ✅ Fixed: Đợi auth loading xong trước khi check user
   const fetchOrder = async () => {
-    if (!user || !orderId) {
-      router.push("/");
+    // Nếu không có orderId thì redirect về orders page
+    if (!orderId) {
+      router.push("/orders");
+      return;
+    }
+
+    // Nếu auth đang loading thì chờ
+    if (authLoading) {
+      return;
+    }
+
+    // Nếu không có user thì redirect về login
+    if (!user) {
+      router.push("/auth/login");
       return;
     }
 
     try {
       setLoading(true);
+      setError(null);
+
       const response = await fetch(`/api/orders/${orderId}`, {
         credentials: "include",
         headers: {
@@ -98,6 +114,14 @@ export default function PaymentSuccessPage() {
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          router.push("/auth/login");
+          return;
+        }
+        if (response.status === 404) {
+          setError("Order not found");
+          return;
+        }
         throw new Error("Failed to fetch order");
       }
 
@@ -105,8 +129,8 @@ export default function PaymentSuccessPage() {
       setOrder(orderData);
     } catch (error) {
       console.error("Error fetching order:", error);
+      setError("Failed to load order details");
       toast.error("Failed to load order details");
-      router.push("/orders");
     } finally {
       setLoading(false);
     }
@@ -128,11 +152,9 @@ export default function PaymentSuccessPage() {
   };
 
   const handleDownloadReceipt = () => {
-    // Implement PDF generation or redirect to receipt endpoint
     toast.success("Receipt download will be implemented soon");
   };
 
-  // Get payment method icon and display name
   const getPaymentMethodInfo = (method: string) => {
     switch (method) {
       case "cash":
@@ -162,11 +184,15 @@ export default function PaymentSuccessPage() {
     }
   };
 
+  // ✅ Fixed: Chỉ gọi fetchOrder khi authLoading hoàn tất
   useEffect(() => {
-    fetchOrder();
-  }, [user, orderId]);
+    if (!authLoading) {
+      fetchOrder();
+    }
+  }, [authLoading, user, orderId]);
 
-  if (loading) {
+  // ✅ Loading state khi đang check auth hoặc fetch order
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <div className="container mx-auto px-4 py-8">
@@ -174,8 +200,39 @@ export default function PaymentSuccessPage() {
             <div className="text-center">
               <div className="h-12 w-12 animate-spin rounded-full border-4 border-green-500 border-t-transparent mx-auto mb-4" />
               <p className="text-gray-600 dark:text-gray-400">
-                Loading order details...
+                {authLoading
+                  ? "Checking authentication..."
+                  : "Loading order details..."}
               </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-16">
+            <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              {error}
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              {error === "Order not found"
+                ? "We couldn't find the order you're looking for."
+                : "Something went wrong while loading your order."}
+            </p>
+            <div className="flex gap-4 justify-center">
+              <Button onClick={() => router.push("/orders")}>
+                View All Orders
+              </Button>
+              <Button variant="outline" onClick={() => fetchOrder()}>
+                Try Again
+              </Button>
             </div>
           </div>
         </div>
@@ -257,7 +314,7 @@ export default function PaymentSuccessPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <Card className="mb-8 border-0 shadow-xl rounded-2xl overflow-hidden">
+            <Card className="mb-8 border-0 shadow-xl rounded-2xl overflow-hidden p-0">
               <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-6 text-white">
                 <div className="flex items-center justify-between">
                   <div>
@@ -376,10 +433,10 @@ export default function PaymentSuccessPage() {
                       className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl"
                     >
                       <div className="relative h-16 w-16 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0">
-                        {item.product.image ? (
+                        {item?.image ? (
                           <Image
-                            src={item.product.image}
-                            alt={item.product.name}
+                            src={item.image}
+                            alt={item?.name || item.name}
                             fill
                             className="object-cover"
                           />
@@ -391,10 +448,10 @@ export default function PaymentSuccessPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-gray-900 dark:text-white truncate">
-                          {item.product.name}
+                          {item?.name || item.name}
                         </h4>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {item.product.category}
+                          {item?.category || item.category}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-500">
                           Quantity: {item.quantity}
@@ -402,10 +459,12 @@ export default function PaymentSuccessPage() {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-gray-900 dark:text-white">
-                          {formatPrice(item.product.price * item.quantity)}
+                          {formatPrice(
+                            (item?.price || item.price) * item.quantity
+                          )}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-500">
-                          {formatPrice(item.product.price)} each
+                          {formatPrice(item?.price || item.price)} each
                         </p>
                       </div>
                     </motion.div>
