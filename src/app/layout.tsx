@@ -1,10 +1,10 @@
-// app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { StackProvider, StackTheme } from "@stackframe/stack";
 import { stackServerApp } from "../stack";
 import "./globals.css";
 import ClientProviders from "./providers";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,6 +34,14 @@ export default function RootLayout({
         {/* <StackProvider app={stackServerApp}>
           <StackTheme> */}
         <ClientProviders>{children}</ClientProviders>
+        <Toaster
+          toastOptions={{
+            classNames: {
+              description:
+                "text-sm italic !text-blue-600 font-semibold leading-snug",
+            },
+          }}
+        />
         {/* </StackTheme>
         </StackProvider> */}
       </body>

@@ -2,58 +2,15 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Input } from "../../../components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../../components/ui/select";
-import { Button } from "../../../components/ui/button";
-import { Badge } from "../../../components/ui/badge";
-import { Card, CardContent, CardFooter } from "../../../components/ui/card";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "../../../components/ui/alert-dialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import Pagination from "../../../components/Pagination";
-import {
-  Search,
-  Filter,
-  Edit,
-  Trash2,
-  Plus,
-  Package,
-  Tag,
-  Eye,
-  Star,
-  ShoppingCart,
-  Heart,
-  Lock,
-} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
-
-const categories = [
-  { value: "all", label: "All Categories" },
-  { value: "Shirts", label: "Shirts" },
-  { value: "Pants", label: "Pants" },
-  { value: "Shoes", label: "Shoes" },
-  { value: "Accessories", label: "Accessories" },
-  { value: "Handbags", label: "Handbags" },
-  { value: "Jewelry", label: "Jewelry" },
-];
+import PageHeader from "@/components/collections/PageHeader";
+import UserInfo from "@/components/collections/UserInfo";
+import ProductFilters from "@/components/collections/ProductFilters";
+import ProductsGrid from "@/components/collections/ProductsGrid";
 
 async function fetchProducts({ queryKey }: any) {
   const [, { page, search, category }] = queryKey;
@@ -120,12 +77,12 @@ export default function CollectionsPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleSearchChange = (e: any) => {
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
     setPage(1);
   };
 
-  const handleCategoryChange = (value: any) => {
+  const handleCategoryChange = (value: string) => {
     setCategory(value);
     setPage(1);
   };
@@ -177,339 +134,38 @@ export default function CollectionsPage() {
     router.push("/products/create");
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(price);
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-4 py-8">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4"
-        >
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-              Product Collection
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Browse our amazing product collection
-            </p>
-          </div>
+        <PageHeader user={user} onCreateProduct={handleCreateProduct} />
 
-          <Button
-            onClick={handleCreateProduct}
-            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
-            disabled={!user}
-          >
-            {!user && <Lock className="mr-2 h-4 w-4" />}
-            <Plus className="mr-2 h-4 w-4" />
-            {user ? "Add New Product" : "Login to Add Product"}
-          </Button>
-        </motion.div>
-
-        {/* User Info Display */}
-        {user && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-4 text-sm text-gray-600 dark:text-gray-400"
-          >
-            Logged in as:{" "}
-            <span className="font-semibold text-purple-600">{user.email}</span>
-          </motion.div>
-        )}
-
-        {/* Login prompt for guests */}
-        {!loading && !user && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
-          >
-            <p className="text-blue-800 dark:text-blue-200 text-sm">
-              <Lock className="inline h-4 w-4 mr-1" />
-              You're browsing as a guest.
-              <button
-                onClick={() => router.push("/auth/login")}
-                className="ml-1 underline font-medium cursor-pointer"
-              >
-                Login here
-              </button>{" "}
-              to create, edit, or delete products.
-            </p>
-          </motion.div>
-        )}
+        {/* User Info */}
+        <UserInfo user={user} loading={loading} />
 
         {/* Filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="mb-8 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700"
-        >
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Search products..."
-                value={search}
-                onChange={handleSearchChange}
-                className="pl-10 h-12 border-gray-300 dark:border-gray-600 focus:border-purple-500 focus:ring-purple-500"
-              />
-            </div>
-            <div className="md:w-64">
-              <div className="relative">
-                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
-                <Select value={category} onValueChange={handleCategoryChange}>
-                  <SelectTrigger className="h-12 pl-10 border-gray-300 dark:border-gray-600 focus:border-purple-500 focus:ring-purple-500">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-          {data && (
-            <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-              Showing {data.products?.length ?? 0} / {data.total ?? 0} products
-              {search && ` for "${search}"`}
-              {category !== "all" &&
-                ` in category "${
-                  categories.find((c) => c.value === category)?.label
-                }"`}
-            </div>
-          )}
-        </motion.div>
+        <ProductFilters
+          search={search}
+          category={category}
+          onSearchChange={handleSearchChange}
+          onCategoryChange={handleCategoryChange}
+          totalProducts={data?.total ?? 0}
+          currentProducts={data?.products?.length ?? 0}
+        />
 
         {/* Products Grid */}
         {isLoading ? (
           <LoadingSpinner />
         ) : (
           <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12"
-            >
-              {data?.products?.map((product: any, index: any) => (
-                <motion.div
-                  key={product._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.05 }}
-                >
-                  <Card className="group pt-0 relative overflow-hidden bg-white dark:bg-gray-900 border-0 shadow-lg hover:shadow-2xl transition-all duration-500 rounded-3xl backdrop-blur-sm hover:-translate-y-2 hover:rotate-1">
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-transparent to-pink-50 dark:from-purple-900/10 dark:via-transparent dark:to-pink-900/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    <CardContent className="p-0 relative z-10">
-                      <div className="relative aspect-[4/5] overflow-hidden rounded-t-3xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700">
-                        {product.image ? (
-                          <>
-                            <Image
-                              src={product.image}
-                              alt={product.name}
-                              fill
-                              className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                          </>
-                        ) : (
-                          <div className="flex items-center justify-center h-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20">
-                            <Package className="h-20 w-20 text-purple-400 opacity-60" />
-                          </div>
-                        )}
-                        <div className="absolute top-4 right-4 z-20">
-                          <Badge
-                            variant={
-                              product.stock > 0 ? "default" : "destructive"
-                            }
-                            className={`${
-                              product.stock > 0
-                                ? "bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/25"
-                                : "bg-red-500 shadow-lg shadow-red-500/25"
-                            } text-white border-0 px-3 py-1 text-xs font-semibold rounded-full backdrop-blur-sm`}
-                          >
-                            {product.stock > 0
-                              ? `${product.stock} in stock`
-                              : "Sold Out"}
-                          </Badge>
-                        </div>
-                        {user && (
-                          <div className="absolute top-4 left-4 flex gap-2">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-9 w-9 rounded-full cursor-pointer bg-white/95 dark:bg-gray-900/95 backdrop-blur-md hover:bg-blue-50 dark:hover:bg-blue-900/30 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 border border-white/50 dark:border-gray-700/50"
-                              onClick={() => handleEdit(product._id)}
-                            >
-                              <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-9 w-9 rounded-full cursor-pointer bg-white/95 dark:bg-gray-900/95 backdrop-blur-md hover:bg-red-50 dark:hover:bg-red-900/30 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 border border-white/50 dark:border-gray-700/50"
-                                >
-                                  <Trash2 className="h-4 w-4 text-red-500 dark:text-red-400" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent className="rounded-2xl border-0 shadow-2xl">
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle className="text-xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">
-                                    Confirm Product Deletion
-                                  </AlertDialogTitle>
-                                  <AlertDialogDescription className="text-gray-600 dark:text-gray-400">
-                                    Are you sure you want to delete "
-                                    {product.name}"? This action cannot be
-                                    undone and will permanently remove this
-                                    product from your store.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter className="gap-3">
-                                  <AlertDialogCancel className="rounded-xl border-gray-200 hover:bg-gray-50">
-                                    Cancel
-                                  </AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleDelete(product._id)}
-                                    className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-                                    disabled={deleteMutation.isPending}
-                                  >
-                                    {deleteMutation.isPending ? (
-                                      <div className="flex items-center gap-2">
-                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                        Deleting...
-                                      </div>
-                                    ) : (
-                                      "Delete Product"
-                                    )}
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        )}
-                        {!user && (
-                          <div className="absolute top-4 left-4 flex gap-2">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-9 w-9 rounded-full cursor-pointer bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-md border border-white/50 dark:border-gray-700/50 opacity-50"
-                              onClick={() => {
-                                toast.info("Please login to edit products");
-                                router.push("/auth/login");
-                              }}
-                            >
-                              <Lock className="h-4 w-4 text-gray-500" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                          <Badge
-                            variant="secondary"
-                            className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 text-purple-700 dark:text-purple-300 border-0 px-3 py-1 rounded-full font-medium"
-                          >
-                            <Tag className="h-3 w-3 mr-1" />
-                            {product.category}
-                          </Badge>
-                          <div className="flex items-center gap-1">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={`star-${star}`}
-                                className="h-3 w-3 text-yellow-400 fill-current"
-                              />
-                            ))}
-                          </div>
-                        </div>
-                        <h3 className="font-bold text-lg text-gray-900 dark:text-white line-clamp-2 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-purple-600 group-hover:to-pink-600 group-hover:bg-clip-text">
-                          {product.name}
-                        </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
-                          {product.description}
-                        </p>
-                        <div className="flex items-center justify-between pt-2">
-                          <div className="space-y-1">
-                            <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                              {formatPrice(product.price)}
-                            </div>
-                          </div>
-                          <Button
-                            size="sm"
-                            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg rounded-full px-6 py-2 transition-all duration-300 hover:scale-105 group-hover:animate-pulse"
-                            disabled={product.stock === 0}
-                          >
-                            <ShoppingCart className="h-4 w-4 mr-2" />
-                            {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="p-6 pt-0 flex gap-3">
-                      <Button
-                        variant="outline"
-                        className="flex-1 rounded-xl border-2 border-purple-200 hover:border-purple-400 hover:bg-purple-50 dark:border-blue-700 dark:hover:bg-blue-900/20 text-purple-600 dark:text-blue-400 font-medium"
-                      >
-                        <Eye className="mr-2 h-4 w-4" />
-                        Quick View
-                      </Button>
-                      <Button
-                        className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg rounded-xl font-medium transition-all duration-300 hover:scale-105"
-                        disabled={product.stock === 0}
-                      >
-                        <Heart className="mr-2 h-4 w-4" />
-                        Wishlist
-                      </Button>
-                    </CardFooter>
-                    <div className="absolute -top-1 -right-1 w-20 h-20 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                    <div className="absolute -bottom-1 -left-1 w-16 h-16 bg-gradient-to-tr from-blue-400/20 to-cyan-400/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-all duration-700" />
-                  </Card>
-                </motion.div>
-              ))}
-            </motion.div>
-
-            {data?.products?.length === 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5 }}
-                className="text-center py-16"
-              >
-                <div className="text-gray-400 text-6xl mb-4">📦</div>
-                <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">
-                  No Products Found
-                </h3>
-                <p className="text-gray-500 dark:text-gray-500 mb-4">
-                  Try changing your search keywords or filters
-                </p>
-                {user && (
-                  <Button
-                    onClick={handleCreateProduct}
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Your First Product
-                  </Button>
-                )}
-              </motion.div>
-            )}
+            <ProductsGrid
+              products={data?.products ?? []}
+              user={user}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onCreateProduct={handleCreateProduct}
+              isDeleting={deleteMutation.isPending}
+            />
 
             {data && (
               <motion.div

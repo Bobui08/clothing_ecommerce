@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from "next/server";
 import connectDB from "../../../../lib/db";
 import { toSerializableObject } from "../../../../lib/utils";
 import Product from "@/models/Product";
-import { RouteParams } from "@/types/auth";
 
 interface Params {
   id: string;
@@ -15,7 +14,7 @@ export async function GET(
   { params }: { params: Params }
 ) {
   await connectDB();
-  const { id } = params;
+  const { id } = await params;
 
   try {
     const product = await Product.findById(id).lean();
